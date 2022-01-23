@@ -1,0 +1,6 @@
+export PM_USERNAME=user
+export PM_REALM=pam
+echo "Please enter your Proxmox Password for foor user $PM_USERNAME@$PM_REALM: "
+read -sr PM_PASSWORD_INPUT
+export PM_PASSWORD=$PM_PASSWORD_INPUT
+export PM_SERVER="server.dominio.ltd"
