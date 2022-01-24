@@ -77,3 +77,12 @@ def EliminarProyecto(pm,id):
         print("Problemas al eliminar el proyecto, quizás no exista...")
 
 
+
+def ActivarUsuario(pm,id,op):
+    try:
+        pm.access.users(id).set(enable=op)
+        print("Cambiado con éxito el usuario:", id)
+    except:
+        print("Problemas al procesar el usuario:",id)
+
+
