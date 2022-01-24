@@ -86,3 +86,15 @@ def ActivarUsuario(pm,id,op):
         print("Problemas al procesar el usuario:",id)
 
 
+def PermisoUsuarioProyecto(pm,id,proy,op):
+    try:
+        newid="Proyecto_"+proy.replace("@","_")
+        if op==1:
+            pm.access.acl.set(path="/pool/"+newid,roles="iesgn",users=id)
+            print("Concediendo permisos de %s a %s" % (newid,id))
+        if op==0:
+            pm.access.acl.set(path="/pool/"+newid,roles="iesgn",users=id,delete=1)
+            print("Quitando permisos de %s a %s" % (newid,id))
+    except:
+       print("Problemas al gestionar %s - %s" % (newid,id))
+
