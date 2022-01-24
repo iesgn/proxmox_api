@@ -3,6 +3,25 @@ import os
 import sys
 import time
 
+
+class color:
+   PURPLE = '\033[1;35;48m'
+   CYAN = '\033[1;36;48m'
+   BOLD = '\033[1;37;48m'
+   BLUE = '\033[1;34;48m'
+   GREEN = '\033[1;32;48m'
+   YELLOW = '\033[1;33;48m'
+   RED = '\033[1;31;48m'
+   BLACK = '\033[1;30;48m'
+   UNDERLINE = '\033[4;37;48m'
+   END = '\033[1;37;0m'
+
+def alert(text):
+    print(color.RED + text + color.END)
+
+def warning(text):
+    print(color.BLUE + text + color.END)
+
 STORAGE=["local","local-lvm"]
 def ConectarProxmox():
     try:
@@ -43,7 +62,16 @@ def CrearProyecto(pm,id):
 
 def GetVMProyecto(pm,id):
     newid="Proyecto_"+id.replace("@","_")
-    return [miembro["id"] for miembro in pm.pools(newid).get()["members"] if not miembro["id"].startswith("storage")]
+    try:
+        return [miembro["id"] for miembro in pm.pools(newid).get()["members"] if not miembro["id"].startswith("storage")]
+    except:
+        return []
+
+def InfoVM(pm,mv):
+    info = pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()
+    text=mv
+    text+="\t"+info["name"]+"\t\t"+str(info["cpus"])+" - "+str(int(info["maxmem"]/1024/1024))+" - "+str(int(info["maxdisk"]/1024/1024/1024))+"\t"+info["status"]
+    return text
 
 def EliminarProyecto(pm,id):
     try:
