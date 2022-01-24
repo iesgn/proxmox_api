@@ -8,7 +8,9 @@ def ListMv(pgn,usuario):
     if len(vms)>0:
         warning(usuario)
         for vm in vms:
-                alert(InfoVM(pgn,vm))
+            alert(InfoVM(pgn,vm))
+        warning("."*80)
+        print()
 
 argv=sys.argv
 pgn=ConectarProxmox()
@@ -18,6 +20,9 @@ if len(argv)==2:
     elif EsGrupo(pgn,argv[1]):
         for usuario in GetUsuariosGrupo(pgn,argv[1]):
             ListMv(pgn,usuario)
+            
+        
+        print
     else:
         print("Usuario/grupo incorrecto.")
 else:
