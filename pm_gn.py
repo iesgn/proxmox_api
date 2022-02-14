@@ -127,3 +127,33 @@ def PermisoUsuarioProyecto(pm,id,proy,op):
     except:
        print("Problemas al gestionar %s - %s" % (newid,id))
 
+
+def NewIdMV(pm):
+    lista_id=[d['vmid'] for d in pm.cluster.resources.get(type="vm")]
+    for id in range(100,10000):
+        if id not in lista_id:
+            return(id)
+
+def GetId(pm,name,id):
+    for mv in GetVMProyecto(pm,id):
+        info = pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()["name"]
+        if info==name:
+            return mv.split("/")[1]
+
+
+def ClonarMV (pm,id,name,user):
+    pool="Proyecto_"+user.replace("@","_")
+    try:
+        pm.nodes("proxmox1").qemu(id).clone.create(newid=NewIdMV(pm),node="proxmox1",vmid=int(id),name=name,pool=pool)
+    except:
+        print("Problemas al clonar MV", id)
+
+def EliminarMV(pm,name,user):
+    id=GetId(pm,name,user)
+    try:
+        pm.nodes("proxmox1").qemu(GetId(pm,name,user)).delete()
+    except:
+        print("Problemas al eliminar MV", GetId(pm,name,user))
+
+
+
