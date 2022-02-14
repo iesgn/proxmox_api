@@ -157,3 +157,10 @@ def EliminarMV(pm,name,user):
 
 
 
+def TestDiscosHuerfanos(pm):
+    discos=[d["volid"] for d in pm.nodes("proxmox1").storage("local-lvm").content.get()]
+    for vm in [d['vmid'] for d in pm.cluster.resources.get(type="vm")]:
+        disco2=[d["volid"] for d in pm.nodes("proxmox1").storage("local-lvm").content.get() if d["volid"].split("-")[2]==str(vm)]
+        for dis in disco2:
+                discos.remove(dis)
+    print(discos)
