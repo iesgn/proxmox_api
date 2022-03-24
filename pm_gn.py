@@ -165,5 +165,6 @@ def TestDiscosHuerfanos(pm):
         for vm in [d['vmid'] for d in pm.cluster.resources.get(type="vm")]:
             disco2=[d["volid"] for d in pm.nodes("proxmox1").storage(store).content.get() if d["volid"].split("-")[2]==str(vm)]
             for dis in disco2:
-                    discos.remove(dis)
+                    #discos.remove(dis)
+                    print(dis)
         print(discos)
