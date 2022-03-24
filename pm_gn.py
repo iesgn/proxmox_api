@@ -22,7 +22,7 @@ def alert(text):
 def warning(text):
     print(color.BLUE + text + color.END)
 
-STORAGE=["local","local-lvm"]
+STORAGE=["local","local-lvm","remote-lvm"]
 def ConectarProxmox():
     try:
         proxmox = ProxmoxAPI(os.environ['PM_SERVER'], user=os.environ['PM_USERNAME']+"@"+os.environ['PM_REALM'],password=os.environ['PM_PASSWORD'], verify_ssl=False)
@@ -158,9 +158,12 @@ def EliminarMV(pm,name,user):
 
 
 def TestDiscosHuerfanos(pm):
-    discos=[d["volid"] for d in pm.nodes("proxmox1").storage("local-lvm").content.get()]
-    for vm in [d['vmid'] for d in pm.cluster.resources.get(type="vm")]:
-        disco2=[d["volid"] for d in pm.nodes("proxmox1").storage("local-lvm").content.get() if d["volid"].split("-")[2]==str(vm)]
-        for dis in disco2:
-                discos.remove(dis)
-    print(discos)
+    STOR=["local-lvm","remote-lvm"]
+    for store in STOR:
+        print(store)
+        discos=[d["volid"] for d in pm.nodes("proxmox1").storage(store).content.get()]
+        for vm in [d['vmid'] for d in pm.cluster.resources.get(type="vm")]:
+            disco2=[d["volid"] for d in pm.nodes("proxmox1").storage(store).content.get() if d["volid"].split("-")[2]==str(vm)]
+            for dis in disco2:
+                    discos.remove(dis)
+        print(discos)
