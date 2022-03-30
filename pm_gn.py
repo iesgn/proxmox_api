@@ -22,7 +22,7 @@ def alert(text):
 def warning(text):
     print(color.BLUE + text + color.END)
 
-STORAGE=["local","local-lvm","remote-lvm"]
+STORAGE=["local","local-lvm","remoto-lvm"]
 def ConectarProxmox():
     try:
         proxmox = ProxmoxAPI(os.environ['PM_SERVER'], user=os.environ['PM_USERNAME']+"@"+os.environ['PM_REALM'],password=os.environ['PM_PASSWORD'], verify_ssl=False)
@@ -60,6 +60,16 @@ def CrearProyecto(pm,id):
     except:
         print(id,"ya procesado...")
 
+def UpdateProyectoStorage(pm,id):
+    
+        newid="Proyecto_"+id.replace("@","_")
+        for stor in STORAGE:
+            try:
+                pm.pools(newid).set(storage=stor)
+            except:
+                pass
+        print(newid,"modificado...")
+    
 def GetVMProyecto(pm,id):
     newid="Proyecto_"+id.replace("@","_")
     try:
@@ -158,7 +168,7 @@ def EliminarMV(pm,name,user):
 
 
 def TestDiscosHuerfanos(pm):
-    STOR=["local-lvm","remote-lvm"]
+    STOR=["local-lvm","remoto-lvm"]
     for store in STOR:
         print(store)
         discos=[d["volid"] for d in pm.nodes("proxmox1").storage(store).content.get()]
