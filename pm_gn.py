@@ -115,6 +115,30 @@ def EliminarProyecto(pm,id):
     except:
         print("Problemas al eliminar el proyecto, quizás no exista...")
 
+def EliminarProyectoMV(pm,id):
+    #try:
+    newid="Proyecto_"+id.replace("@","_")
+    print(GetVMProyecto(pm,id))
+    #try:
+    for mv in GetVMProyecto(pm,id):
+        pm.pools(newid).set(vms=mv.split("/")[1],delete=1)
+        print("Quitando mv del proyecto:",mv)
+        #try:
+        if(pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()["qmpstatus"]!="stopped"):
+            pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.stop.create()
+        while(pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()["qmpstatus"]!="stopped"):
+            time.sleep(2)
+            print("Parando...",mv)
+        pm.nodes("proxmox1").qemu(mv.split("/")[1]).delete(purge=1,skiplock=1)
+        
+        print("Eliminando mv:",mv)
+            #except:
+            #    print("Error al eliminar la máquina...")
+    #except:
+        #pass
+        
+    #except:
+    #    print("Problemas al eliminar el proyecto, quizás no exista...")
 
 
 def ActivarUsuario(pm,id,op):
