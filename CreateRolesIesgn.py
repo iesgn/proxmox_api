@@ -28,3 +28,10 @@ for grupo in GetGrupos(pgn):
         pgn.access.acl.set(path="/pool/Imagenes",roles="iesgn-template-clone",groups=grupo)
     except:
         print("Ya está asignado el rol iesgn-template-clone al grupo:",grupo)
+
+# Asigno el rol iesgn al grupo de profesores sobrel pool de imágenes para que puedan crear imágnes en él
+
+try:
+    pgn.access.acl.set(path="/pool/Imagenes",roles="iesgn",groups="profesores-iesgn")
+except:
+    print("Ya está asignado el rol iesgn al grupo profesores.")
