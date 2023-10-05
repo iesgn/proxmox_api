@@ -4,7 +4,7 @@ pgn=ConectarProxmox()
 roles=[{"nombre":"iesgn","privs":"VM.Clone, VM.Allocate, VM.Config.CPU, Pool.Audit, VM.Snapshot, VM.Config.HWType, \
      VM.Config.Network, VM.Config.CDROM, Sys.Audit, VM.Config.Disk, Sys.Syslog, Sys.Console, Datastore.AllocateSpace,\
      VM.Config.Memory, VM.Backup, VM.Config.Options, VM.PowerMgmt, VM.Console, VM.Migrate, Datastore.Audit, Sys.Modify,\
-     VM.Config.Cloudinit, Permissions.Modify, VM.Audit, VM.Monitor, Datastore.Allocate"},\
+     VM.Config.Cloudinit, Permissions.Modify, VM.Audit, VM.Monitor, Datastore.Allocate","VM.SnapShot.Rollback"},\
     {"nombre":"iesgn-template-clone","privs":"Pool.Audit, VM.Clone, VM.Audit"}
     ]
 # Creo los roles del IESGN
