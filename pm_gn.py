@@ -78,7 +78,11 @@ def GetVMProyecto(pm,id):
         return []
 
 def InfoVM(pm,mv):
-    info = pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()
+    try:
+       info = pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()
+    except:
+       info = pm.nodes("proxmox1").lxc(mv.split("/")[1]).status.current.get()
+
     text=mv
     espacios=" "*(20-len(info["name"]))
     text+="\t"+info["name"]+espacios+str(info["cpus"])+" - "+str(int(info["maxmem"]/1024/1024))+" - "+str(int(info["maxdisk"]/1024/1024/1024))+"\t"+info["status"]
