@@ -1,4 +1,3 @@
-from ast import In
 from pm_gn import *
 import sys
 
@@ -20,9 +19,6 @@ if len(argv)==2:
     elif EsGrupo(pgn,argv[1]):
         for usuario in GetUsuariosGrupo(pgn,argv[1]):
             ListMv(pgn,usuario)
-            
-        
-        print
     else:
         print("Usuario/grupo incorrecto.")
 else:

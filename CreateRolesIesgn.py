@@ -1,37 +1,46 @@
 from pm_gn import *
-import sys
 pgn=ConectarProxmox()
-roles=[{"nombre":"iesgn","privs":"VM.Clone, VM.Allocate, VM.Config.CPU, Pool.Audit, VM.Snapshot, VM.Config.HWType, \
-     VM.Config.Network, VM.Config.CDROM, Sys.Audit, VM.Config.Disk, Sys.Syslog, Sys.Console, Datastore.AllocateSpace,\
-     VM.Config.Memory, VM.Backup, VM.Config.Options, VM.PowerMgmt, VM.Console, VM.Migrate, Datastore.Audit, Sys.Modify,\
-     VM.Config.Cloudinit, Permissions.Modify, VM.Audit, VM.Monitor, Datastore.Allocate","VM.SnapShot.Rollback"},\
-    {"nombre":"iesgn-template-clone","privs":"Pool.Audit, VM.Clone, VM.Audit"}
+
+# Roles del IESGN (ver infra_iesgn/proxmox/roles.md, Proxmox 9).
+# Si el rol ya existe se actualizan sus privilegios a los de esta lista.
+roles=[{"nombre":"iesgn","privs":"Datastore.AllocateSpace,Datastore.Audit,Permissions.Modify,Pool.Audit,SDN.Use,\
+Sys.Audit,Sys.Console,Sys.Modify,Sys.Syslog,VM.Allocate,VM.Audit,VM.Backup,VM.Clone,VM.Config.CDROM,VM.Config.CPU,\
+VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Console,\
+VM.Migrate,VM.PowerMgmt,VM.Snapshot,VM.Snapshot.Rollback"},
+    {"nombre":"iesgn-red","privs":"SDN.Allocate,SDN.Audit,SDN.Use,Sys.AccessNetwork,Sys.Modify"},
+    {"nombre":"iesgn-template-clone","privs":"Pool.Audit,VM.Audit,VM.Clone"},
+    {"nombre":"iesgn-template-create","privs":"Pool.Allocate,VM.Allocate"}
     ]
-# Creo los roles del IESGN
+
+# Creo (o actualizo) los roles del IESGN
+roles_existentes=[rol["roleid"] for rol in pgn.access.roles.get()]
 for rol in roles:
     try:
-        pgn.access.roles.create(roleid=rol["nombre"],privs=rol["privs"])
-    except:
-        print("Ya está creado el rol:",rol["nombre"])
+        if rol["nombre"] in roles_existentes:
+            pgn.access.roles(rol["nombre"]).set(privs=rol["privs"])
+            print("Rol actualizado:",rol["nombre"])
+        else:
+            pgn.access.roles.create(roleid=rol["nombre"],privs=rol["privs"])
+            print("Rol creado:",rol["nombre"])
+    except ResourceException as e:
+        alert("Problemas con el rol %s: %s" % (rol["nombre"],e))
 
 # Creo el pool imagenes
 
-try:
-    pgn.pools.create(poolid="Imagenes")
-except:
+if ExisteProyecto(pgn,"Imagenes"):
     print("Pool imágenes ya creado")
+else:
+    pgn.pools.create(poolid="Imagenes")
+    print("Pool imágenes creado")
 
-# Asigno a los grupos que hay el rol iesgn-template-clone, para el pool imágenes
+# A los grupos del IESGN (*-iesgn) les asigno el rol iesgn-template-clone sobre el pool imágenes
 
 for grupo in GetGrupos(pgn):
-    try:
+    if grupo.endswith("-iesgn"):
         pgn.access.acl.set(path="/pool/Imagenes",roles="iesgn-template-clone",groups=grupo)
-    except:
-        print("Ya está asignado el rol iesgn-template-clone al grupo:",grupo)
+        print("Asignado iesgn-template-clone sobre /pool/Imagenes al grupo:",grupo)
 
-# Asigno el rol iesgn al grupo de profesores sobrel pool de imágenes para que puedan crear imágnes en él
+# Los profesores además pueden crear plantillas en el pool imágenes
 
-try:
-    pgn.access.acl.set(path="/pool/Imagenes",roles="iesgn",groups="profesores-iesgn")
-except:
-    print("Ya está asignado el rol iesgn al grupo profesores.")
+pgn.access.acl.set(path="/pool/Imagenes",roles="iesgn-template-create",groups="profesores-iesgn")
+print("Asignado iesgn-template-create sobre /pool/Imagenes al grupo: profesores-iesgn")

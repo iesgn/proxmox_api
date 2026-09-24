@@ -1,6 +1,9 @@
 export PM_USERNAME=user
 export PM_REALM=pam
-echo "Please enter your Proxmox Password for foor user $PM_USERNAME@$PM_REALM: "
+echo "Please enter your Proxmox Password for user $PM_USERNAME@$PM_REALM: "
 read -sr PM_PASSWORD_INPUT
 export PM_PASSWORD=$PM_PASSWORD_INPUT
 export PM_SERVER="server.dominio.ltd"
+# Opcionales: puerto (por defecto 443, proxy inverso) y verificación SSL (por defecto sí)
+#export PM_PORT=8006
+#export PM_VERIFY_SSL=no
