@@ -9,7 +9,8 @@ VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.N
 VM.Migrate,VM.PowerMgmt,VM.Snapshot,VM.Snapshot.Rollback"},
     {"nombre":"iesgn-red","privs":"SDN.Allocate,SDN.Audit,SDN.Use,Sys.AccessNetwork,Sys.Modify"},
     {"nombre":"iesgn-template-clone","privs":"Pool.Audit,VM.Audit,VM.Clone"},
-    {"nombre":"iesgn-template-create","privs":"Pool.Allocate,VM.Allocate"}
+    {"nombre":"iesgn-template-create","privs":"Pool.Allocate,VM.Allocate"},
+    {"nombre":"iesgn-bridge","privs":"SDN.Audit,SDN.Use"}
     ]
 
 # Creo (o actualizo) los roles del IESGN
