@@ -228,13 +228,16 @@ def ClonarMV(pm,id,name,user):
 
 # --- Redes SDN por usuario -------------------------------------------------
 # Cada usuario tiene REDES_POR_USUARIO VNets en la zona ZONA (switches aislados, sin
-# subred), llamadas <prefijo><nnn>n<1..3>. El alias "<usuario> <realm> red<N>" indica
-# de quién es cada VNet y permite reconocerlas al volver a ejecutar los scripts.
+# subred), llamadas vmbr<nº> a partir de vmbr100, para que en el desplegable salgan
+# después de vmbr0 y vmbr1. El alias "<usuario> <grupo> red<N>" (p.ej. "ana asir1 red1")
+# indica de quién es cada VNet y permite reconocerlas al volver a ejecutar los scripts.
 
 ZONA="proyecto"
 REDES_POR_USUARIO=3
 ROL_BRIDGE="iesgn-bridge"
 BRIDGES_COMPARTIDOS=["vmbr0","vmbr1"]
+PRIMER_BRIDGE=100
+ULTIMO_BRIDGE=9999       # el id de una VNet tiene como máximo 8 caracteres
 
 def GetACL(pm):
     return pm.access.acl.get()
@@ -251,20 +254,25 @@ def ExisteZona(pm,zona=ZONA):
 def GetVnets(pm):
     return pm.cluster.sdn.vnets.get()
 
-def AliasRed(id,n):
-    return "%s red%d" % (id.replace("@"," "),n)
+# profesores-iesgn -> prof, asir1-iesgn -> asir1, smr2-iesgn -> smr2
+def GrupoCorto(grupo):
+    nombre=grupo.split("-")[0]
+    return "prof" if nombre=="profesores" else nombre
+
+def NombreUsuario(id):
+    return id.split("@")[0]
+
+def AliasRed(id,grupo,n):
+    return "%s %s red%d" % (NombreUsuario(id),grupo,n)
+
+# "ana asir1 red2" -> ("ana",2); None si el alias no tiene ese formato
+def LeerAlias(alias):
+    partes=re.fullmatch(r"(\S+) \S+ red(\d+)",alias or "")
+    return (partes.group(1),int(partes.group(2))) if partes else None
 
 def EsRedDe(vnet,id):
-    return vnet.get("zone")==ZONA and vnet.get("alias","").startswith(id.replace("@"," ")+" red")
-
-# asir2-iesgn -> a2, smr2-iesgn -> s2, profesores-iesgn -> p
-def PrefijoGrupo(grupo):
-    nombre=grupo.split("-")[0].lower()
-    return nombre[0]+"".join(c for c in nombre if c.isdigit())
-
-def PrefijoValido(prefijo):
-    # El id de una VNet tiene como máximo 8 caracteres: prefijo + nnn + n + N
-    return re.fullmatch(r"[a-z][a-z0-9]{0,2}",prefijo) is not None
+    datos=LeerAlias(vnet.get("alias"))
+    return vnet.get("zone")==ZONA and datos is not None and datos[0]==NombreUsuario(id)
 
 def AplicarSDN(pm):
     upid=pm.cluster.sdn.set()
@@ -272,55 +280,6 @@ def AplicarSDN(pm):
         print("Configuración SDN aplicada.")
     else:
         alert("Error al aplicar la configuración SDN (ver el log de tareas de Proxmox).")
-
-# Crea las VNets que le falten al usuario y le da el rol ROL_BRIDGE sobre cada una.
-# vnets y acls son las listas actuales; se actualizan con lo que se crea.
-# Devuelve el número de VNets creadas (para saber si hay que aplicar el SDN).
-def CrearRedesUsuario(pm,id,prefijo,vnets,acls,dry_run=False):
-    propias=[v["vnet"] for v in vnets if EsRedDe(v,id)]
-    if propias:
-        base=propias[0][:-2]
-    else:
-        usados={int(v["vnet"][len(prefijo):len(prefijo)+3]) for v in vnets if re.fullmatch(prefijo+r"\d{3}n\d",v["vnet"])}
-        libres=[n for n in range(1,1000) if n not in usados]
-        if not libres:
-            alert("No quedan números libres para el prefijo %s." % prefijo)
-            return 0
-        base="%s%03d" % (prefijo,libres[0])
-    creadas=0
-    for n in range(1,REDES_POR_USUARIO+1):
-        vnet="%sn%d" % (base,n)
-        alias=AliasRed(id,n)
-        existente=[v for v in vnets if v["vnet"]==vnet]
-        try:
-            if existente and existente[0].get("alias")!=alias:
-                alert("  La VNet %s ya existe con alias '%s', no se toca." % (vnet,existente[0].get("alias","")))
-                continue
-            if existente:
-                print("  [YA EXISTE] VNet",vnet)
-            else:
-                if not dry_run:
-                    pm.cluster.sdn.vnets.create(vnet=vnet,zone=ZONA,alias=alias)
-                vnets.append({"vnet":vnet,"zone":ZONA,"alias":alias})
-                creadas+=1
-                print("  %s VNet %s (%s)" % ("[dry-run] Crearía" if dry_run else "[OK] Creada",vnet,alias))
-            path="/sdn/zones/%s/%s" % (ZONA,vnet)
-            if TieneACL(acls,path,ROL_BRIDGE,id):
-                print("  [YA EXISTE] ACL",path)
-            else:
-                if not dry_run:
-                    pm.access.acl.set(path=path,roles=ROL_BRIDGE,users=id)
-                acls.append({"path":path,"roleid":ROL_BRIDGE,"ugid":id,"type":"user"})
-                print("  %s ACL %s -> %s -> %s" % ("[dry-run] Asignaría" if dry_run else "[OK]",path,ROL_BRIDGE,id))
-        except ResourceException as e:
-            alert("  Problemas con la VNet %s: %s" % (vnet,e))
-    return creadas
-
-# "ana iesgn red1" -> "ana@iesgn" (None si el alias no tiene ese formato)
-def PropietarioRed(alias):
-    nombre=alias.rsplit(" red",1)[0] if " red" in alias else ""
-    usuario,_,realm=nombre.rpartition(" ")
-    return usuario+"@"+realm if usuario and realm else None
 
 # Bridges/VNets a los que está conectada alguna tarjeta de red de una MV o CT
 def GetBridgesEnUso(pm):
@@ -333,6 +292,74 @@ def GetBridgesEnUso(pm):
                 if bridge:
                     en_uso.setdefault(bridge.group(1),[]).append("%s/%s" % (recurso["type"],recurso["vmid"]))
     return en_uso
+
+# Nombres que no se pueden usar para una VNet nueva: VNets existentes, interfaces de
+# los nodos y bridges que aparezcan en la configuración de alguna MV/CT (aunque ya no
+# existan, para no conectar una MV antigua a la red de otro usuario).
+def GetNombresOcupados(pm,vnets):
+    ocupados={v["vnet"] for v in vnets}
+    for nodo in pm.nodes.get():
+        ocupados|={iface["iface"] for iface in pm.nodes(nodo["node"]).network.get()}
+    ocupados|=set(GetBridgesEnUso(pm))
+    return ocupados
+
+# Devuelve 'cantidad' números libres; si consecutivos, busca un bloque seguido.
+def NumerosLibres(ocupados,cantidad,consecutivos):
+    libres=[n for n in range(PRIMER_BRIDGE,ULTIMO_BRIDGE+1) if "vmbr%d" % n not in ocupados]
+    if consecutivos:
+        for i in range(len(libres)-cantidad+1):
+            if libres[i+cantidad-1]-libres[i]==cantidad-1:
+                return libres[i:i+cantidad]
+    return libres[:cantidad] if len(libres)>=cantidad else None
+
+# Crea las VNets que le falten al usuario y le da el rol ROL_BRIDGE sobre cada una.
+# vnets, ocupados y acls son el estado actual; se actualizan con lo que se crea.
+# Devuelve el número de VNets creadas (para saber si hay que aplicar el SDN).
+def CrearRedesUsuario(pm,id,grupo,vnets,ocupados,acls,dry_run=False):
+    propias={LeerAlias(v["alias"])[1]:v["vnet"] for v in vnets if EsRedDe(v,id)}
+    faltan=[n for n in range(1,REDES_POR_USUARIO+1) if n not in propias]
+    if faltan:
+        numeros=NumerosLibres(ocupados,len(faltan),consecutivos=not propias)
+        if numeros is None:
+            alert("  No quedan nombres libres entre vmbr%d y vmbr%d." % (PRIMER_BRIDGE,ULTIMO_BRIDGE))
+            return 0
+        for n,numero in zip(faltan,numeros):
+            propias[n]="vmbr%d" % numero
+    creadas=0
+    for n in range(1,REDES_POR_USUARIO+1):
+        vnet=propias[n]
+        alias=AliasRed(id,grupo,n)
+        try:
+            if n not in faltan:
+                print("  [YA EXISTE] VNet",vnet)
+            else:
+                if not dry_run:
+                    pm.cluster.sdn.vnets.create(vnet=vnet,zone=ZONA,alias=alias)
+                vnets.append({"vnet":vnet,"zone":ZONA,"alias":alias})
+                ocupados.add(vnet)
+                creadas+=1
+                print("  %s VNet %s (%s)" % ("[dry-run] Crearía" if dry_run else "[OK] Creada",vnet,alias))
+            path="/sdn/zones/%s/%s" % (ZONA,vnet)
+            if n in faltan:
+                # ACLs que hubieran quedado de una VNet anterior con el mismo nombre
+                for acl in [a for a in acls if a["path"]==path]:
+                    if not dry_run:
+                        if acl["type"]=="group":
+                            pm.access.acl.set(path=path,roles=acl["roleid"],groups=acl["ugid"],delete=1)
+                        else:
+                            pm.access.acl.set(path=path,roles=acl["roleid"],users=acl["ugid"],delete=1)
+                    acls.remove(acl)
+                    print("  %s Quitada ACL antigua %s -> %s -> %s" % ("[dry-run]" if dry_run else "[OK]",path,acl["roleid"],acl["ugid"]))
+            if TieneACL(acls,path,ROL_BRIDGE,id):
+                print("  [YA EXISTE] ACL",path)
+            else:
+                if not dry_run:
+                    pm.access.acl.set(path=path,roles=ROL_BRIDGE,users=id)
+                acls.append({"path":path,"roleid":ROL_BRIDGE,"ugid":id,"type":"user"})
+                print("  %s ACL %s -> %s -> %s" % ("[dry-run] Asignaría" if dry_run else "[OK]",path,ROL_BRIDGE,id))
+        except ResourceException as e:
+            alert("  Problemas con la VNet %s: %s" % (vnet,e))
+    return creadas
 
 # Borra una VNet (si ninguna máquina la usa) y las ACLs sobre ella.
 # Devuelve True si se ha borrado (para saber si hay que aplicar el SDN).

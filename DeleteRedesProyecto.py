@@ -43,12 +43,13 @@ for usuario in usuarios:
             a_borrar.setdefault(usuario,[]).append(vnet)
             elegidas.add(vnet["vnet"])
 if huerfanas:
+    nombres_existentes={NombreUsuario(u) for u in usuarios_existentes}
     for vnet in vnets_zona:
-        propietario=PropietarioRed(vnet.get("alias",""))
-        if propietario is None:
+        datos=LeerAlias(vnet.get("alias"))
+        if datos is None:
             alert("La VNet %s no tiene un alias reconocible ('%s'), no se toca." % (vnet["vnet"],vnet.get("alias","")))
-        elif propietario not in usuarios_existentes and vnet["vnet"] not in elegidas:
-            a_borrar.setdefault(propietario+" (no existe)",[]).append(vnet)
+        elif datos[0] not in nombres_existentes and vnet["vnet"] not in elegidas:
+            a_borrar.setdefault(datos[0]+" (no existe)",[]).append(vnet)
 
 total=sum(len(v) for v in a_borrar.values())
 if total==0:
