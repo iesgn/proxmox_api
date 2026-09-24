@@ -2,7 +2,7 @@ from proxmoxer import ProxmoxAPI
 import os
 import sys
 import time
-
+import json
 
 class color:
    PURPLE = '\033[1;35;48m'
@@ -82,7 +82,7 @@ def InfoVM(pm,mv):
        info = pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()
     except:
        info = pm.nodes("proxmox1").lxc(mv.split("/")[1]).status.current.get()
-
+       
     text=mv
     espacios=" "*(20-len(info["name"]))
     text+="\t"+info["name"]+espacios+str(info["cpus"])+" - "+str(int(info["maxmem"]/1024/1024))+" - "+str(int(info["maxdisk"]/1024/1024/1024))+"\t"+info["status"]
@@ -107,7 +107,7 @@ def EliminarProyecto(pm,id):
                 while(pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()["qmpstatus"]!="stopped"):
                     time.sleep(2)
                     print("Parando...",mv)
-                pm.nodes("proxmox1").qemu(mv.split("/")[1]).delete(purge=1,skiplock=1)
+                pm.nodes("proxmox1").qemu(mv.split("/")[1]).delete()
                 print("Eliminando mv:",mv)
                 #except:
                 #    print("Error al eliminar la máquina...")
@@ -133,7 +133,7 @@ def EliminarProyectoMV(pm,id):
         while(pm.nodes("proxmox1").qemu(mv.split("/")[1]).status.current.get()["qmpstatus"]!="stopped"):
             time.sleep(2)
             print("Parando...",mv)
-        pm.nodes("proxmox1").qemu(mv.split("/")[1]).delete(purge=1,skiplock=1)
+        #pm.nodes("proxmox1").qemu(mv.split("/")[1]).delete(purge="1",skiplock="1",destroy-unreferenced-disks="1")
         
         print("Eliminando mv:",mv)
             #except:
