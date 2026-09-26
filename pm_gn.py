@@ -235,7 +235,8 @@ def ClonarMV(pm,id,name,user):
 ZONA="proyecto"
 REDES_POR_USUARIO=3
 ROL_BRIDGE="iesgn-bridge"
-BRIDGES_COMPARTIDOS=["vmbr0","vmbr1"]
+BRIDGES_COMPARTIDOS=["vmbr0"]
+BRIDGES_SOLO_ADMIN=["vmbr1"]  # existen, pero ningún grupo puede usarlos (rol NoAccess)
 PRIMER_BRIDGE=100
 ULTIMO_BRIDGE=9999       # el id de una VNet tiene como máximo 8 caracteres
 

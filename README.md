@@ -69,7 +69,7 @@ Cada usuario tiene tres VNets propias (`vmbr100`, `vmbr101`...) en la zona SDN `
 |---|---|
 | `CreateZonaProyecto.py` | Crea la zona Simple `proyecto` y aplica el SDN |
 | `AddRedesProyecto.py <grupo> [--dry-run]` | Crea las 3 VNets que le falten a cada usuario del grupo (un usuario nuevo recibe tres números seguidos libres) y le da el rol `iesgn-bridge` sobre ellas. No usa nombres que existan como interfaz en algún nodo ni que aparezcan en la configuración de alguna MV/CT. Aplica el SDN solo si ha creado algo |
-| `PermisosLocalnetwork.py <grupo> [--dry-run]` | Da al grupo `iesgn-bridge` sobre `vmbr0` y `vmbr1` y le quita `iesgn-red` sobre la zona `localnetwork`. No se usa con `profesores-iesgn` |
+| `PermisosLocalnetwork.py <grupo> [--dry-run]` | Pone al grupo `NoAccess` sobre `vmbr1`, que queda solo para `admin`. Si es un grupo de alumnos, además le da `iesgn-bridge` sobre `vmbr0` y le quita `iesgn-red` sobre la zona `localnetwork`. Con `profesores-iesgn` mantiene su `iesgn-red` |
 | `DeleteRedesProyecto.py <usuario\|grupo> [--huerfanas] [--dry-run]` | Borra las VNets del usuario o de los usuarios del grupo, y sus ACLs. Con `--huerfanas` (se puede usar solo) borra también las VNets cuyo usuario ya no existe. No borra las VNets que usa alguna MV/CT. Pide confirmación |
 
 Las constantes de la configuración de redes (nombre de la zona, número de redes por usuario, rol, bridges compartidos y rango de nombres) están al principio de la sección de redes de `pm_gn.py`.
